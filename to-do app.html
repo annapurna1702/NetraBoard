@@ -1,0 +1,936 @@
+<!DOCTYPE html> 
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NetraBoard - See your work. Rule your time.</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+
+/* =====================================
+   CYBERPUNK ROOT SYSTEM
+===================================== */
+
+:root {
+  --bg-dark: #0b0f1a;
+  --glass: rgba(255, 255, 255, 0.05);
+  --border-glow: rgba(0, 255, 255, 0.25);
+
+  --neon-purple: #7b5cff;
+  --neon-blue: #00f5ff;
+  --neon-pink: #ff00c8;
+
+  --text-primary: #e6f1ff;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", sans-serif;
+}
+
+body {
+  background: var(--bg-dark);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* =====================================
+   AMBIENT BACKGROUND GLOW
+===================================== */
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  filter: blur(140px);
+  opacity: 0.15;
+  z-index: -2;
+  animation: float 18s ease-in-out infinite alternate;
+}
+
+body::before {
+  background: radial-gradient(circle, var(--neon-purple), transparent 70%);
+  top: -200px;
+  left: -200px;
+}
+
+body::after {
+  background: radial-gradient(circle, var(--neon-blue), transparent 70%);
+  bottom: -200px;
+  right: -200px;
+}
+
+@keyframes float {
+  0% { transform: translate(0px, 0px); }
+  100% { transform: translate(80px, 60px); }
+}
+
+/* =====================================
+   FLOATING PARTICLES
+===================================== */
+
+canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
+}
+
+/* =====================================
+   HEADER
+===================================== */
+
+.header {
+  padding: 40px;
+  font-size: 32px;
+  font-weight: bold;
+  background: linear-gradient(90deg, var(--neon-purple), var(--neon-blue), var(--neon-pink));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 6s linear infinite;
+}
+
+@keyframes shimmer {
+  to { background-position: 200% center; }
+}
+
+/* =====================================
+   STATS
+===================================== */
+
+.stats {
+  display: flex;
+  gap: 20px;
+  padding: 20px 40px;
+}
+
+.stat-card {
+  flex: 1;
+  padding: 20px;
+  border-radius: 16px;
+  background: var(--glass);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-glow);
+  transition: 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-6px);
+  box-shadow:
+    0 10px 30px rgba(0, 255, 255, 0.3),
+    0 0 20px rgba(0, 255, 255, 0.2);
+}
+
+/* =====================================
+   BOARD (KANBAN)
+===================================== */
+
+.board {
+  display: flex;
+  gap: 20px;
+  padding: 40px;
+}
+
+.column {
+  flex: 1;
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--glass);
+  backdrop-filter: blur(18px);
+  border: 1px solid var(--border-glow);
+  min-height: 300px;
+}
+
+.column h3 {
+  margin-bottom: 15px;
+}
+
+/* =====================================
+   TASK with MOUSE GLOW
+===================================== */
+
+.task {
+  background: rgba(255,255,255,0.08);
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  cursor: grab;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.task::before {
+  content: '';
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  background: radial-gradient(circle, rgba(0, 245, 255, 0.4), transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  left: var(--glow-x, 50%);
+  top: var(--glow-y, 50%);
+  transform: translate(-50%, -50%);
+}
+
+.task:hover::before {
+  opacity: 1;
+}
+
+.task:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 0 15px var(--neon-blue),
+    0 0 30px var(--neon-purple);
+}
+
+.task-title {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.task-assigned {
+  font-size: 11px;
+  color: var(--neon-blue);
+  opacity: 0.9;
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.task-assigned::before {
+  content: '\f3c5';
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  font-size: 10px;
+}
+
+.task-due {
+  font-size: 11px;
+  color: var(--neon-pink);
+  opacity: 0.9;
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.task-due::before {
+  content: '\f017';
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  font-size: 10px;
+}
+
+.task-actions {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  gap: 8px;
+}
+
+.set-due-btn {
+  padding: 5px 10px;
+  font-size: 11px;
+  background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.set-due-btn:hover {
+  box-shadow: 0 0 10px var(--neon-pink);
+  transform: scale(1.05);
+}
+
+.delete-btn {
+  padding: 5px 10px;
+  font-size: 11px;
+  background: linear-gradient(135deg, #ff4444, #cc0000);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.delete-btn:hover {
+  box-shadow: 0 0 10px #ff4444;
+  transform: scale(1.05);
+}
+
+/* =====================================
+   ADD TASK BUTTON
+===================================== */
+
+.add-btn {
+  margin: 20px 40px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--neon-purple), var(--neon-blue));
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+  transition: 0.3s ease;
+}
+
+.add-btn:hover {
+  transform: scale(1.05);
+  box-shadow:
+    0 0 20px var(--neon-blue),
+    0 0 40px var(--neon-purple);
+}
+
+/* =====================================
+   DUE DATE MODAL
+===================================== */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  visibility: hidden;
+  opacity: 0;
+  transition: 0.3s ease;
+  z-index: 1000;
+}
+
+.modal.active {
+  visibility: visible;
+  opacity: 1;
+}
+
+.modal-content {
+  width: 350px;
+  padding: 30px;
+  border-radius: 20px;
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-glow);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Toggle buttons */
+
+.toggle {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.toggle button {
+  flex: 1;
+  padding: 8px;
+  margin: 0 5px;
+  background: transparent;
+  border: 1px solid var(--neon-blue);
+  color: var(--neon-blue);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.toggle button.active {
+  background: var(--neon-blue);
+  color: black;
+  box-shadow: 0 0 15px var(--neon-blue);
+}
+
+/* Views */
+
+.view {
+  display: none;
+  animation: fadeSlide 0.4s ease;
+}
+
+.view.active {
+  display: block;
+}
+
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+input[type="date"],
+input[type="time"],
+input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(255,255,255,0.1);
+  color: white;
+  margin-bottom: 20px;
+}
+
+/* Set Button */
+
+.set-btn {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
+  color: white;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.set-btn:hover {
+  box-shadow:
+    0 0 20px var(--neon-pink),
+    0 0 40px var(--neon-purple);
+}
+
+/* =====================================
+   EXPLOSION EFFECT
+===================================== */
+
+.explosion-particle {
+  position: fixed;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  animation: explode 1s ease-out forwards;
+}
+
+@keyframes explode {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--x), var(--y)) scale(0);
+    opacity: 0;
+  }
+}
+
+/* =====================================
+   CHANGE STATUS SELECT (TABLE)
+===================================== */
+
+select {
+  background: rgba(255,255,255,0.1);
+  color: white;
+  border: 1px solid var(--border-glow);
+  border-radius: 8px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+select option {
+  background: var(--bg-dark);
+  color: white;
+}
+
+</style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+
+<div class="header">NetraBoard - See your work. Rule your time.</div>
+
+<div class="stats">
+  <div class="stat-card">Total: <span id="totalTasks">1</span></div>
+  <div class="stat-card">Completed: <span id="completedTasks">0</span></div>
+  <div class="stat-card">In Progress: <span id="inProgressTasks">0</span></div>
+</div>
+
+<div class="view-toggle">
+  <button class="add-btn" onclick="openAddTaskModal()">+ Add New Task</button>
+</div>
+
+<!-- KANBAN VIEW -->
+<div class="board" id="kanbanView">
+  <div class="column" id="assignedCol" ondrop="drop(event, 'assigned')" ondragover="allowDrop(event)">
+    <h3>Assigned</h3>
+  </div>
+
+  <div class="column" id="progressCol" ondrop="drop(event, 'progress')" ondragover="allowDrop(event)">
+    <h3>In Progress</h3>
+  </div>
+
+  <div class="column" id="completedCol" ondrop="drop(event, 'completed')" ondragover="allowDrop(event)">
+    <h3>Completed</h3>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal" id="modal">
+  <div class="modal-content">
+    
+    <h3 id="modalTitle" style="margin-bottom: 20px;">Add New Task</h3>
+    
+    <div id="taskNameSection">
+      <input type="text" id="taskName" placeholder="Task name...">
+    </div>
+
+    <div class="toggle">
+      <button id="dateBtn" class="active" onclick="showDate()">Date</button>
+      <button id="timeBtn" onclick="showTime()">Time</button>
+    </div>
+
+    <div id="dateView" class="view active">
+      <input type="date" id="dueDate">
+    </div>
+
+    <div id="timeView" class="view">
+      <input type="time" id="dueTime">
+    </div>
+
+    <button class="set-btn" id="modalActionBtn" onclick="addTask()">Add Task</button>
+
+  </div>
+</div>
+
+<script>
+
+/* =====================================
+   TASK DATA STRUCTURE
+===================================== */
+
+let tasks = [];
+
+let nextId = 1;
+let draggedTaskId = null;
+
+/* =====================================
+   UPDATE STATS
+===================================== */
+
+function updateStats() {
+  const total = tasks.length;
+  const completed = tasks.filter(t => t.status === 'completed').length;
+  const inProgress = tasks.filter(t => t.status === 'progress').length;
+  
+  document.getElementById('totalTasks').textContent = total;
+  document.getElementById('completedTasks').textContent = completed;
+  document.getElementById('inProgressTasks').textContent = inProgress;
+}
+
+/* =====================================
+   DELETE TASK
+===================================== */
+
+function deleteTask(taskId) {
+  if (!confirm('Are you sure you want to delete this task?')) {
+    return;
+  }
+  
+  // Find the task element for explosion effect
+  const taskElement = document.querySelector(`[data-id="${taskId}"]`);
+  if (taskElement) {
+    createExplosion(taskElement);
+  }
+  
+  // Remove from tasks array
+  tasks = tasks.filter(t => t.id !== taskId);
+  
+  // Update kanban view
+  updateKanbanView();
+  updateStats();
+}
+
+/* =====================================
+   DRAG & DROP
+===================================== */
+
+function allowDrop(ev) {
+  ev.preventDefault();
+}
+
+function drag(ev) {
+  draggedTaskId = parseInt(ev.target.getAttribute('data-id'));
+  ev.target.style.opacity = '0.5';
+}
+
+function drop(ev, newStatus) {
+  ev.preventDefault();
+  
+  const draggedElement = document.querySelector(`[data-id="${draggedTaskId}"]`);
+  draggedElement.style.opacity = '1';
+  
+  // Update task status
+  const task = tasks.find(t => t.id === draggedTaskId);
+  const oldStatus = task.status;
+  task.status = newStatus;
+  
+  // Move to new column
+  const targetColumn = ev.target.closest('.column');
+  targetColumn.appendChild(draggedElement);
+  draggedElement.setAttribute('data-status', newStatus);
+  
+  // Explosion effect when completing task
+  if (newStatus === 'completed' && oldStatus !== 'completed') {
+    createExplosion(draggedElement);
+  }
+  
+  updateStats();
+}
+
+/* =====================================
+   MOUSE GLOW TRACKING
+===================================== */
+
+document.addEventListener('mousemove', function(e) {
+  // Track mouse on task cards
+  const tasks = document.querySelectorAll('.task:hover');
+  tasks.forEach(task => {
+    const rect = task.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const glow = task.querySelector('::before') || task;
+    task.style.setProperty('--mouse-x', x + 'px');
+    task.style.setProperty('--mouse-y', y + 'px');
+    
+    // Update pseudo-element position via CSS variables
+    task.style.setProperty('--glow-x', x + 'px');
+    task.style.setProperty('--glow-y', y + 'px');
+  });
+  
+  // Track mouse on table rows
+  const rows = document.querySelectorAll('.task-table tbody tr:hover');
+  rows.forEach(row => {
+    const rect = row.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    row.style.setProperty('--glow-x', x + 'px');
+    row.style.setProperty('--glow-y', y + 'px');
+  });
+});
+
+/* =====================================
+   EXPLOSION EFFECT
+===================================== */
+
+function createExplosion(element) {
+  const rect = element.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  
+  const colors = ['#7b5cff', '#00f5ff', '#ff00c8', '#ffffff'];
+  const particleCount = 30;
+  
+  for (let i = 0; i < particleCount; i++) {
+    const particle = document.createElement('div');
+    particle.className = 'explosion-particle';
+    
+    const angle = (Math.PI * 2 * i) / particleCount;
+    const velocity = 100 + Math.random() * 100;
+    const x = Math.cos(angle) * velocity;
+    const y = Math.sin(angle) * velocity;
+    
+    particle.style.left = centerX + 'px';
+    particle.style.top = centerY + 'px';
+    particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+    particle.style.setProperty('--x', x + 'px');
+    particle.style.setProperty('--y', y + 'px');
+    
+    document.body.appendChild(particle);
+    
+    setTimeout(() => particle.remove(), 1000);
+  }
+}
+
+/* =====================================
+   MODAL CONTROLS
+===================================== */
+
+const modal = document.getElementById("modal");
+let modalMode = 'add'; // 'add' or 'setDue'
+let currentTaskId = null;
+
+function openAddTaskModal() {
+  modalMode = 'add';
+  currentTaskId = null;
+  document.getElementById('modalTitle').textContent = 'Add New Task';
+  document.getElementById('taskNameSection').style.display = 'block';
+  document.getElementById('taskName').value = '';
+  document.getElementById('dueDate').value = '';
+  document.getElementById('dueTime').value = '';
+  document.getElementById('modalActionBtn').textContent = 'Add Task';
+  document.getElementById('modalActionBtn').onclick = addTask;
+  modal.classList.add("active");
+}
+
+function openSetDueDateModal(taskId) {
+  modalMode = 'setDue';
+  currentTaskId = taskId;
+  const task = tasks.find(t => t.id === taskId);
+  
+  document.getElementById('modalTitle').textContent = `Set Due Date for "${task.name}"`;
+  document.getElementById('taskNameSection').style.display = 'none';
+  document.getElementById('dueDate').value = task.dueDate || '';
+  document.getElementById('dueTime').value = task.dueTime || '';
+  document.getElementById('modalActionBtn').textContent = 'Set Due Date';
+  document.getElementById('modalActionBtn').onclick = setDueDate;
+  modal.classList.add("active");
+}
+
+// Close modal when clicking outside
+modal.addEventListener('click', function(e) {
+  if (e.target === modal) {
+    modal.classList.remove('active');
+  }
+});
+
+function showDate() {
+  document.getElementById("dateView").classList.add("active");
+  document.getElementById("timeView").classList.remove("active");
+  document.getElementById("dateBtn").classList.add("active");
+  document.getElementById("timeBtn").classList.remove("active");
+}
+
+function showTime() {
+  document.getElementById("timeView").classList.add("active");
+  document.getElementById("dateView").classList.remove("active");
+  document.getElementById("timeBtn").classList.add("active");
+  document.getElementById("dateBtn").classList.remove("active");
+}
+
+function addTask() {
+  const taskName = document.getElementById("taskName").value.trim();
+  const date = document.getElementById("dueDate").value;
+  const time = document.getElementById("dueTime").value;
+  
+  if (!taskName) {
+    alert("Please enter a task name");
+    return;
+  }
+  
+  const newTask = {
+    id: nextId++,
+    name: taskName,
+    status: 'assigned',
+    assignedDate: new Date().toLocaleDateString(),
+    dueDate: date,
+    dueTime: time
+  };
+  
+  tasks.push(newTask);
+  
+  // Update kanban
+  addTaskToKanban(newTask);
+  
+  updateStats();
+  modal.classList.remove("active");
+}
+
+function setDueDate() {
+  const date = document.getElementById("dueDate").value;
+  const time = document.getElementById("dueTime").value;
+  
+  const task = tasks.find(t => t.id === currentTaskId);
+  task.dueDate = date;
+  task.dueTime = time;
+  
+  // Update kanban view
+  updateKanbanView();
+  
+  modal.classList.remove("active");
+}
+
+function updateKanbanView() {
+  // Clear columns
+  document.getElementById('assignedCol').innerHTML = '<h3>Assigned</h3>';
+  document.getElementById('progressCol').innerHTML = '<h3>In Progress</h3>';
+  document.getElementById('completedCol').innerHTML = '<h3>Completed</h3>';
+  
+  // Re-add all tasks
+  tasks.forEach(task => {
+    const taskDiv = document.createElement('div');
+    taskDiv.className = 'task';
+    taskDiv.draggable = true;
+    taskDiv.setAttribute('data-id', task.id);
+    taskDiv.setAttribute('data-status', task.status);
+    taskDiv.ondragstart = drag;
+    
+    let assignedText = `<div class="task-assigned">Assigned: ${task.assignedDate}</div>`;
+    
+    let dueText = '';
+    if (task.dueDate || task.dueTime) {
+      dueText = `<div class="task-due">Due: ${task.dueDate || ''} ${task.dueTime || ''}</div>`;
+    }
+    
+    taskDiv.innerHTML = `
+      <div class="task-title">${task.name}</div>
+      ${assignedText}
+      ${dueText}
+      <div class="task-actions">
+        <button class="set-due-btn" onclick="event.stopPropagation(); openSetDueDateModal(${task.id})">
+          <i class="fa-regular fa-calendar"></i> ${task.dueDate || task.dueTime ? 'Change Due Date' : 'Set Due Date'}
+        </button>
+        <button class="delete-btn" onclick="event.stopPropagation(); deleteTask(${task.id})">
+          <i class="fa-solid fa-trash"></i> Delete
+        </button>
+      </div>
+    `;
+    
+    if (task.status === 'assigned') {
+      document.getElementById('assignedCol').appendChild(taskDiv);
+    } else if (task.status === 'progress') {
+      document.getElementById('progressCol').appendChild(taskDiv);
+    } else {
+      document.getElementById('completedCol').appendChild(taskDiv);
+    }
+  });
+}
+
+function addTaskToKanban(task) {
+  const taskDiv = document.createElement('div');
+  taskDiv.className = 'task';
+  taskDiv.draggable = true;
+  taskDiv.setAttribute('data-id', task.id);
+  taskDiv.setAttribute('data-status', task.status);
+  taskDiv.ondragstart = drag;
+  
+  let assignedText = `<div class="task-assigned">Assigned: ${task.assignedDate}</div>`;
+  
+  let dueText = '';
+  if (task.dueDate || task.dueTime) {
+    dueText = `<div class="task-due">Due: ${task.dueDate || ''} ${task.dueTime || ''}</div>`;
+  }
+  
+  taskDiv.innerHTML = `
+    <div class="task-title">${task.name}</div>
+    ${assignedText}
+    ${dueText}
+    <div class="task-actions">
+      <button class="set-due-btn" onclick="event.stopPropagation(); openSetDueDateModal(${task.id})">
+        <i class="fa-regular fa-calendar"></i> ${task.dueDate || task.dueTime ? 'Change Due Date' : 'Set Due Date'}
+      </button>
+      <button class="delete-btn" onclick="event.stopPropagation(); deleteTask(${task.id})">
+        <i class="fa-solid fa-trash"></i> Delete
+      </button>
+    </div>
+  `;
+  
+  document.getElementById('assignedCol').appendChild(taskDiv);
+}
+
+function addTaskToTable(task) {
+  const tr = document.createElement('tr');
+  tr.setAttribute('data-id', task.id);
+  tr.setAttribute('data-status', task.status);
+  
+  const statusClass = task.status === 'assigned' ? 'status-assigned' : 
+                      task.status === 'progress' ? 'status-progress' : 'status-completed';
+  const statusText = task.status === 'assigned' ? 'Assigned' : 
+                     task.status === 'progress' ? 'In Progress' : 'Completed';
+  
+  tr.innerHTML = `
+    <td>${task.name}</td>
+    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+    <td><span style="color: var(--neon-blue); font-size: 12px;">${task.assignedDate}</span></td>
+    <td>${task.dueDate || '-'}</td>
+    <td>${task.dueTime || '-'}</td>
+    <td>
+      <div class="table-actions">
+        <select onchange="changeStatusFromTable(${task.id}, this.value)">
+          <option value="assigned" ${task.status === 'assigned' ? 'selected' : ''}>Assigned</option>
+          <option value="progress" ${task.status === 'progress' ? 'selected' : ''}>In Progress</option>
+          <option value="completed" ${task.status === 'completed' ? 'selected' : ''}>Completed</option>
+        </select>
+        <button class="set-due-btn" onclick="openSetDueDateModal(${task.id})">
+          <i class="fa-regular fa-calendar"></i> ${task.dueDate || task.dueTime ? 'Change' : 'Set'}
+        </button>
+        <button class="delete-btn" onclick="deleteTask(${task.id})">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </div>
+    </td>
+  `;
+  
+  document.getElementById('tableBody').appendChild(tr);
+}
+
+/* =====================================
+   FLOATING PARTICLES
+===================================== */
+
+const canvas = document.getElementById("particles");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let particlesArray = [];
+
+class Particle {
+  constructor() {
+    this.x = Math.random() * canvas.width;
+    this.y = Math.random() * canvas.height;
+    this.size = Math.random() * 2;
+    this.speedX = Math.random() * 0.3 - 0.15;
+    this.speedY = Math.random() * 0.3 - 0.15;
+  }
+  update() {
+    this.x += this.speedX;
+    this.y += this.speedY;
+    if (this.x > canvas.width) this.x = 0;
+    if (this.x < 0) this.x = canvas.width;
+    if (this.y > canvas.height) this.y = 0;
+    if (this.y < 0) this.y = canvas.height;
+  }
+  draw() {
+    ctx.fillStyle = "rgba(0,255,255,0.3)";
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function initParticles() {
+  for (let i = 0; i < 80; i++) {
+    particlesArray.push(new Particle());
+  }
+}
+
+function animateParticles() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  particlesArray.forEach(p => {
+    p.update();
+    p.draw();
+  });
+  requestAnimationFrame(animateParticles);
+}
+
+window.addEventListener('resize', () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+
+initParticles();
+animateParticles();
+updateStats();
+
+</script>
+
+</body>
+</html>
